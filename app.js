@@ -209,12 +209,18 @@ function runAnalysis() {
     }
 
     // Simulate network delay / heavy calculation for effect
-    setTimeout(() => {
-        // Cold Logic is now the default when real API is off
-        generateIsochrone(coords, timeMins, transport, errorMargin, useHeatmap, true, weatherImpact, pitStops, borders, trafficAPI);
-        loading.classList.add('hidden');
-        document.getElementById('results-panel').classList.remove('hidden');
-    }, 1200);
+    const apiOptions = { weather: weatherImpact, pitStops: pitStops, borders: borders, traffic: trafficAPI };
+
+    if (realAPI && API_CONFIG.ors) {
+        fetchRealIsochrone(coords, timeMins, transport, errorMargin, useHeatmap, apiOptions);
+    } else {
+        setTimeout(() => {
+            // Cold Logic is now the default when real API is off
+            generateIsochrone(coords, timeMins, transport, errorMargin, useHeatmap, true, weatherImpact, pitStops, borders, trafficAPI);
+            loading.classList.add('hidden');
+            document.getElementById('results-panel').classList.remove('hidden');
+        }, 1200);
+    }
 }
 
 // Procedural Fallback Engine (ColdLogic)
@@ -329,6 +335,181 @@ function generateHeatmapPoints(centerLatlng, radiusKm, boundsPolygon) {
                     const nodeDist = turf.distance(nodePt, pt, { units: 'kilometers' });
                     if (nodeDist < (radiusKm * 0.25)) {
                         intensity += (node.weight * (1 - (nodeDist / (radiusKm * 0.25))));
+                    }
+                }
+            }
+            intensity = Math.min(1, Math.max(0, intensity));
+            points.push([ptLat, ptLng, intensity]);
+        }
+    }
+    return points;
+}
+
+const ORS_PROFILES = {
+    'driving-car': 'driving-car',
+    'off-road': 'driving-car',
+    'foot-walking': 'foot-walking',
+    'cycling-regular': 'cycling-regular',
+    'transit': 'driving-car',
+    'train': 'driving-car'
+};
+
+async function fetchRealIsochrone(center, timeMins, transport, errorMargin, showHeatmap, opts) {
+    clearMapLayers();
+
+    let effectiveTimeMins = timeMins;
+    if (opts.pitStops) {
+        const cycles = Math.floor(timeMins / 180);
+        effectiveTimeMins -= (cycles * 15);
+    }
+    if (opts.borders && effectiveTimeMins > 60) {
+        effectiveTimeMins -= 60;
+    }
+    effectiveTimeMins = Math.max(0, effectiveTimeMins);
+
+    let penalty = 1.0;
+    if (opts.weather) penalty *= 0.8;
+    if (opts.traffic) penalty *= (0.7 + (Math.random() * 0.2));
+
+    let finalSecs = (effectiveTimeMins * 60) * penalty;
+    finalSecs = finalSecs * (1 + (errorMargin / 100));
+
+    const profile = ORS_PROFILES[transport] || 'driving-car';
+
+    const body = {
+        locations: [[center[1], center[0]]],
+        range: [finalSecs],
+        range_type: 'time'
+    };
+
+    try {
+        const response = await fetch(`https://api.openrouteservice.org/v2/isochrones/${profile}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': API_CONFIG.ors
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) throw new Error(`ORS API Error: ${response.status}`);
+        const data = await response.json();
+
+        const isochronePolygon = data.features[0].geometry;
+
+        L.geoJSON(isochronePolygon, {
+            style: {
+                color: 'var(--md-sys-color-primary)',
+                weight: 2,
+                fillColor: 'var(--md-sys-color-primary-container)',
+                fillOpacity: 0.15
+            }
+        }).addTo(isochroneLayer);
+
+        const turfPoly = turf.polygon(isochronePolygon.coordinates);
+        const areaSqKm = turf.area(turfPoly) / 1e6;
+
+        const bbox = turf.bbox(turfPoly);
+        const approxRadius = turf.distance(turf.point([center[1], center[0]]), turf.point([bbox[0], bbox[1]]));
+
+        document.getElementById('res-time').textContent = effectiveTimeMins.toFixed(0);
+        document.getElementById('res-radius').textContent = approxRadius.toFixed(2);
+        document.getElementById('res-area').textContent = areaSqKm.toFixed(0);
+
+        const bounds = L.geoJSON(isochronePolygon).getBounds();
+        map.fitBounds(bounds, { padding: [50, 50] });
+
+        if (showHeatmap && typeof L.heatLayer !== 'undefined') {
+            const heatPoints = await generateRealHeatmapPoints(center, approxRadius, turfPoly);
+            heatLayer = L.heatLayer(heatPoints, {
+                radius: 25,
+                blur: 15,
+                maxZoom: 14,
+                gradient: {
+                    0.2: 'var(--md-sys-color-primary)',
+                    0.4: 'cyan',
+                    0.6: 'var(--md-sys-color-error)',
+                    1.0: 'red'
+                }
+            }).addTo(map);
+        }
+
+        document.getElementById('map-loading').classList.add('hidden');
+        document.getElementById('results-panel').classList.remove('hidden');
+
+    } catch (e) {
+        console.error(e);
+        alert('Real API Routing failed (check ORS API key or limit). Falling back to cold logic.');
+        generateIsochrone(center, timeMins, transport, errorMargin, showHeatmap, true, opts.weather, opts.pitStops, opts.borders, opts.traffic);
+        document.getElementById('map-loading').classList.add('hidden');
+        document.getElementById('results-panel').classList.remove('hidden');
+    }
+}
+
+async function generateRealHeatmapPoints(centerLatlng, radiusKm, boundsPolygon) {
+    const points = [];
+    const bbox = turf.bbox(boundsPolygon);
+    const numPoints = 600 + Math.floor(radiusKm * 10);
+
+    let hotNodes = [];
+
+    // Fetch POIs from Overpass API (OSM)
+    const query = `
+        [out:json][timeout:15];
+        (
+          node["public_transport"="station"](${bbox[1]},${bbox[0]},${bbox[3]},${bbox[2]});
+          node["amenity"="cafe"](${bbox[1]},${bbox[0]},${bbox[3]},${bbox[2]});
+          node["shop"="supermarket"](${bbox[1]},${bbox[0]},${bbox[3]},${bbox[2]});
+          node["highway"="motorway_junction"](${bbox[1]},${bbox[0]},${bbox[3]},${bbox[2]});
+        );
+        out body limit 50;
+    `;
+
+    try {
+        const req = await fetch('https://overpass-api.de/api/interpreter', {
+            method: 'POST',
+            body: query
+        });
+        const data = await req.json();
+
+        if (data && data.elements) {
+            data.elements.forEach(el => {
+                hotNodes.push({
+                    lat: el.lat,
+                    lng: el.lon,
+                    weight: 0.8 + Math.random() * 0.4
+                });
+            });
+        }
+    } catch (e) {
+        console.log("Overpass API limit/error, standard cold weights used.", e);
+    }
+
+    if (hotNodes.length === 0) {
+        for (let i = 0; i < 4; i++) {
+            hotNodes.push({
+                lat: bbox[1] + Math.random() * (bbox[3] - bbox[1]),
+                lng: bbox[0] + Math.random() * (bbox[2] - bbox[0]),
+                weight: 0.5 + Math.random() * 0.5
+            });
+        }
+    }
+
+    for (let i = 0; i < numPoints; i++) {
+        const ptLng = bbox[0] + Math.random() * (bbox[2] - bbox[0]);
+        const ptLat = bbox[1] + Math.random() * (bbox[3] - bbox[1]);
+        const pt = turf.point([ptLng, ptLat]);
+
+        if (turf.booleanPointInPolygon(pt, boundsPolygon)) {
+            const d = turf.distance(turf.point([centerLatlng[1], centerLatlng[0]]), pt, { units: 'kilometers' });
+            let intensity = 1 - (d / radiusKm);
+
+            for (const node of hotNodes) {
+                const nodePt = turf.point([node.lng, node.lat]);
+                if (turf.booleanPointInPolygon(nodePt, boundsPolygon)) {
+                    const nodeDist = turf.distance(nodePt, pt, { units: 'kilometers' });
+                    if (nodeDist < (radiusKm * 0.3)) {
+                        intensity += (node.weight * (1 - (nodeDist / (radiusKm * 0.3))));
                     }
                 }
             }

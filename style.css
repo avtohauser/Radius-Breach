@@ -403,6 +403,7 @@ body {
 
 .md-slider {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     height: 4px;
     background: var(--md-sys-color-secondary-container);

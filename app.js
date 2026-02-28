@@ -261,8 +261,14 @@ async function runAnalysis() {
     document.getElementById('map-loading').classList.remove('hidden');
     document.getElementById('results-panel').classList.add('hidden');
 
-    // Use OSRM Public Engine Strategy
-    await generateOsrmIsochrone([lat, lng], timeMins, transport, errorMargin, showHeatmap, opts);
+    try {
+        // Use OSRM Public Engine Strategy
+        await generateOsrmIsochrone([lat, lng], timeMins, transport, errorMargin, showHeatmap, opts);
+    } catch (e) {
+        console.error("Analysis Exception:", e);
+        document.getElementById('map-loading').classList.add('hidden');
+        alert(i18n[currentLang].errorOsrm || "OSRM route processing failed.");
+    }
 }
 
 /**
@@ -353,53 +359,59 @@ async function generateOsrmIsochrone(center, timeMins, transport, errorMargin, s
     const profile = OSRM_PROFILES[transport] || 'car';
 
     const numRays = 16;
-    let polygonPoints = [];
     let usedFallback = false;
 
     // Center Turf Point
     const centerPt = turf.point([center[1], center[0]]);
+    const rayPromises = [];
 
+    // Parallelize OSRM requests with AbortController wrapper
     for (let i = 0; i < numRays; i++) {
         const angle = (360 / numRays) * i;
-        // Project a point far away along the angle
         const destination = turf.destination(centerPt, maxTheoreticalRadiusKm * 1.5, angle, { units: 'kilometers' });
         const destCoords = destination.geometry.coordinates;
 
         const reqUrl = `${OSRM_URL}/${profile}/${center[1]},${center[0]};${destCoords[0]},${destCoords[1]}?overview=full&geometries=geojson`;
 
-        try {
-            const resp = await fetch(reqUrl);
-            if (!resp.ok) throw new Error("OSRM limit reached");
+        const rayTask = (async () => {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000); // 4-second strict timeout per ray
+                const resp = await fetch(reqUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
 
-            const data = await resp.json();
-            if (data.code !== 'Ok') throw new Error("OSRM logic error");
+                if (!resp.ok) throw new Error("OSRM limit reached");
+                const data = await resp.json();
+                if (data.code !== 'Ok' || !data.routes || !data.routes.length) throw new Error("OSRM logic error");
 
-            const routeLine = data.routes[0].geometry.coordinates;
-            const totalDurationSecs = data.routes[0].duration;
+                const routeLine = data.routes[0].geometry.coordinates;
+                const totalDurationSecs = data.routes[0].duration;
 
-            if (totalDurationSecs <= targetSecsWithVariance) {
-                // If the whole route is shorter than our target time, take the end point
-                polygonPoints.push(routeLine[routeLine.length - 1]);
-            } else {
-                // Interpolate along line (Simplified approach: take percentage of distance based on time ratio)
-                const ratio = targetSecsWithVariance / totalDurationSecs;
-                const line = turf.lineString(routeLine);
-                const totalDist = turf.length(line, { units: 'kilometers' });
-                const targetDist = totalDist * ratio;
-                const reachPt = turf.along(line, targetDist, { units: 'kilometers' });
-                polygonPoints.push(reachPt.geometry.coordinates);
+                if (totalDurationSecs <= targetSecsWithVariance) {
+                    return { angle, pt: routeLine[routeLine.length - 1], fallback: false };
+                } else {
+                    const ratio = targetSecsWithVariance / totalDurationSecs;
+                    const line = turf.lineString(routeLine);
+                    const totalDist = turf.length(line, { units: 'kilometers' });
+                    const targetDist = Math.max(0, totalDist * ratio);
+                    const reachPt = turf.along(line, targetDist, { units: 'kilometers' });
+                    return { angle, pt: reachPt.geometry.coordinates, fallback: false };
+                }
+            } catch (e) {
+                const fallbackDest = turf.destination(centerPt, maxTheoreticalRadiusKm, angle, { units: 'kilometers' });
+                return { angle, pt: fallbackDest.geometry.coordinates, fallback: true };
             }
-
-        } catch (e) {
-            console.warn(`Ray ${i} failed. Using cold logic point.`, e);
-            usedFallback = true;
-            const fallbackDest = turf.destination(centerPt, maxTheoreticalRadiusKm, angle, { units: 'kilometers' });
-            polygonPoints.push(fallbackDest.geometry.coordinates);
-        }
-
-        // Anti-DDoS sleep for public API
-        await new Promise(r => setTimeout(r, 100));
+        })();
+        rayPromises.push(rayTask);
     }
+
+    const rayResults = await Promise.all(rayPromises);
+
+    // Sort geographically so polygon doesn't intersect itself
+    rayResults.sort((a, b) => a.angle - b.angle);
+
+    let polygonPoints = rayResults.map(r => r.pt);
+    usedFallback = rayResults.some(r => r.fallback);
 
     // Close the polygon
     if (polygonPoints.length > 0) {
@@ -479,10 +491,14 @@ async function generateRealHeatmapPoints(centerLatlng, radiusKm, boundsPolygon) 
     `;
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4500); // 4.5s heat map timeout
         const req = await fetch('https://overpass-api.de/api/interpreter', {
             method: 'POST',
-            body: query
+            body: query,
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
         const data = await req.json();
 
         if (data && data.elements) {

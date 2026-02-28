@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Outfit:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap"
         rel="stylesheet">
 
     <!-- Leaflet CSS -->
@@ -34,13 +34,17 @@
             <span class="material-symbols-outlined logo-icon">radar</span>
             <div class="app-title-group">
                 <h1 class="app-title">Radius Breach</h1>
-                <span class="app-subtitle">OSINT Geometry Tool</span>
+                <span class="app-subtitle" data-i18n="subtitle">OSINT Geometry Tool</span>
             </div>
         </div>
         <div class="app-bar-right">
-            <button class="icon-button" id="btn-settings" title="API Settings">
-                <span class="material-symbols-outlined">settings</span>
-            </button>
+            <div class="lang-switch">
+                <input type="radio" id="lang-en" name="language" value="en" checked>
+                <label for="lang-en">EN</label>
+                <input type="radio" id="lang-ru" name="language" value="ru">
+                <label for="lang-ru">RU</label>
+                <div class="lang-slider"></div>
+            </div>
         </div>
     </header>
 
@@ -51,10 +55,10 @@
 
                 <!-- Card: Location & Time -->
                 <div class="md-card">
-                    <h2 class="card-title">Setup</h2>
+                    <h2 class="card-title" data-i18n="setup">Setup</h2>
 
                     <div class="md-text-field">
-                        <label for="coordinates">Finish Point (Lat, Lng)</label>
+                        <label for="coordinates" data-i18n="finishPoint">Finish Point (Lat, Lng)</label>
                         <div class="input-with-icon">
                             <span class="material-symbols-outlined field-icon">my_location</span>
                             <input type="text" id="coordinates" placeholder="e.g. 55.7558, 37.6173" required>
@@ -66,7 +70,7 @@
                     </div>
 
                     <div class="md-text-field">
-                        <label for="travel-time">Travel Time (Minutes)</label>
+                        <label for="travel-time" data-i18n="travelTime">Travel Time (Minutes)</label>
                         <div class="input-with-icon">
                             <span class="material-symbols-outlined field-icon">schedule</span>
                             <input type="number" id="travel-time" min="1" max="1440" value="30" required>
@@ -76,48 +80,48 @@
 
                 <!-- Card: Transport Profiles -->
                 <div class="md-card">
-                    <h2 class="card-title">Transport Profile</h2>
+                    <h2 class="card-title" data-i18n="transportProfile">Transport Profile</h2>
                     <div class="chip-group">
                         <label class="md-chip">
                             <input type="radio" name="transport" value="driving-car" checked>
                             <span class="chip-content">
                                 <span class="material-symbols-outlined">directions_car</span>
-                                Auto
+                                <span data-i18n="auto">Auto</span>
                             </span>
                         </label>
                         <label class="md-chip">
                             <input type="radio" name="transport" value="off-road">
                             <span class="chip-content">
                                 <span class="material-symbols-outlined">rv_hookup</span>
-                                Buggy
+                                <span data-i18n="buggy">Buggy</span>
                             </span>
                         </label>
                         <label class="md-chip">
                             <input type="radio" name="transport" value="foot-walking">
                             <span class="chip-content">
                                 <span class="material-symbols-outlined">directions_walk</span>
-                                Walk
+                                <span data-i18n="walk">Walk</span>
                             </span>
                         </label>
                         <label class="md-chip">
                             <input type="radio" name="transport" value="cycling-regular">
                             <span class="chip-content">
                                 <span class="material-symbols-outlined">directions_bike</span>
-                                Bike
+                                <span data-i18n="bike">Bike</span>
                             </span>
                         </label>
                         <label class="md-chip">
                             <input type="radio" name="transport" value="transit">
                             <span class="chip-content">
                                 <span class="material-symbols-outlined">directions_bus</span>
-                                Bus
+                                <span data-i18n="bus">Bus</span>
                             </span>
                         </label>
                         <label class="md-chip">
                             <input type="radio" name="transport" value="train">
                             <span class="chip-content">
                                 <span class="material-symbols-outlined">train</span>
-                                Train
+                                <span data-i18n="train">Train</span>
                             </span>
                         </label>
                     </div>
@@ -125,12 +129,12 @@
 
                 <!-- Card: Environment & Logistics -->
                 <div class="md-card">
-                    <h2 class="card-title">Logistics & Factors</h2>
+                    <h2 class="card-title" data-i18n="logistics">Logistics & Factors</h2>
 
                     <label class="md-switch-row">
                         <div class="switch-info">
-                            <span class="switch-title">Weather Impact</span>
-                            <span class="switch-desc">Reduces speed by 20%</span>
+                            <span class="switch-title" data-i18n="weatherImpact">Weather Impact</span>
+                            <span class="switch-desc" data-i18n="weatherDesc">Reduces speed by 20%</span>
                         </div>
                         <div class="md-switch">
                             <input type="checkbox" id="weather-toggle">
@@ -140,8 +144,8 @@
 
                     <label class="md-switch-row">
                         <div class="switch-info">
-                            <span class="switch-title">Pit-stop Auto Calc</span>
-                            <span class="switch-desc">+15 min every 3 hours</span>
+                            <span class="switch-title" data-i18n="pitstopCalc">Pit-stop Auto Calc</span>
+                            <span class="switch-desc" data-i18n="pitstopDesc">+15 min every 3 hours</span>
                         </div>
                         <div class="md-switch">
                             <input type="checkbox" id="pitstop-toggle">
@@ -151,8 +155,8 @@
 
                     <label class="md-switch-row">
                         <div class="switch-info">
-                            <span class="switch-title">Border Crossing Delay</span>
-                            <span class="switch-desc">Adds 1 hour fixed delay</span>
+                            <span class="switch-title" data-i18n="borderDelay">Border Crossing Delay</span>
+                            <span class="switch-desc" data-i18n="borderDesc">Adds 1 hour fixed delay</span>
                         </div>
                         <div class="md-switch">
                             <input type="checkbox" id="border-toggle">
@@ -162,22 +166,11 @@
 
                     <label class="md-switch-row">
                         <div class="switch-info">
-                            <span class="switch-title">Real API Routing</span>
-                            <span class="switch-desc">Uses OpenRouteService (requires API Key)</span>
+                            <span class="switch-title" data-i18n="trafficHeuristic">Traffic Heuristic</span>
+                            <span class="switch-desc" data-i18n="trafficDesc">Simulates rush hours & delays</span>
                         </div>
                         <div class="md-switch">
-                            <input type="checkbox" id="real-api-toggle">
-                            <div class="switch-track"></div>
-                        </div>
-                    </label>
-
-                    <label class="md-switch-row">
-                        <div class="switch-info">
-                            <span class="switch-title">Real Traffic API</span>
-                            <span class="switch-desc">TomTom Live Traffic (requires API Key)</span>
-                        </div>
-                        <div class="md-switch">
-                            <input type="checkbox" id="traffic-api-toggle">
+                            <input type="checkbox" id="traffic-heuristic-toggle">
                             <div class="switch-track"></div>
                         </div>
                     </label>
@@ -186,10 +179,10 @@
 
                 <!-- Analysis Mode -->
                 <div class="md-card">
-                    <h2 class="card-title">Heatmap & Variance</h2>
+                    <h2 class="card-title" data-i18n="variance">Heatmap & Variance</h2>
                     <div class="md-slider-container">
                         <div class="slider-header">
-                            <span>General Error Margin</span>
+                            <span data-i18n="errorMargin">General Error Margin</span>
                             <span class="slider-val" id="margin-val">10%</span>
                         </div>
                         <input type="range" class="md-slider" id="error-margin" min="0" max="30" value="10">
@@ -197,8 +190,8 @@
 
                     <label class="md-switch-row mt-16">
                         <div class="switch-info">
-                            <span class="switch-title">Probability Heatmap</span>
-                            <span class="switch-desc">Node weighting via Overpass API</span>
+                            <span class="switch-title" data-i18n="probHeatmap">Probability Heatmap</span>
+                            <span class="switch-desc" data-i18n="heatmapDesc">Intelligent node weighting (OSM)</span>
                         </div>
                         <div class="md-switch">
                             <input type="checkbox" id="heatmap-toggle" checked>
@@ -214,7 +207,7 @@
             <div class="fab-container">
                 <button type="submit" form="analysis-form" class="md-fab primary" id="btn-breach">
                     <span class="material-symbols-outlined">radar</span>
-                    Initiate Breach
+                    <span data-i18n="initiateBreach">Initiate Breach</span>
                 </button>
             </div>
         </aside>
@@ -223,75 +216,48 @@
         <main class="map-container">
             <div id="map"></div>
 
-            <!-- Result Overlay Card -->
-            <div id="results-panel" class="md-bottom-sheet hidden">
+            <!-- Result Overlay Card (SYSTEM LOG) -->
+            <div id="results-panel" class="md-bottom-sheet hidden terminal-ui">
                 <div class="drag-handle"></div>
-                <h3 class="sheet-title">Analysis Complete</h3>
+                <div class="terminal-header">
+                    <span class="terminal-dots">
+                        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                    </span>
+                    <span class="terminal-title">RADIUS_BREACH_LOGS</span>
+                </div>
 
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <span class="material-symbols-outlined stat-icon">timer</span>
-                        <div class="stat-content">
-                            <span class="stat-val"><span id="res-time">--</span> min</span>
-                            <span class="stat-lbl">Eff. Time</span>
-                        </div>
-                    </div>
-                    <div class="stat-box">
-                        <span class="material-symbols-outlined stat-icon">moving</span>
-                        <div class="stat-content">
-                            <span class="stat-val" id="res-radius">-- km</span>
-                            <span class="stat-lbl">Max Radius</span>
-                        </div>
-                    </div>
-                    <div class="stat-box">
-                        <span class="material-symbols-outlined stat-icon">architecture</span>
-                        <div class="stat-content">
-                            <span class="stat-val" id="res-area">-- km²</span>
-                            <span class="stat-lbl">Area</span>
-                        </div>
-                    </div>
+                <div class="terminal-content">
+                    <p class="log-line"><span class="prompt">></span> <span data-i18n="logStatus">SYS_STATUS:
+                            ANALYSIS_COMPLETE</span></p>
+                    <p class="log-line"><span class="prompt">></span> <span data-i18n="logTime">EFF_TRAVEL_TIME:</span>
+                        <span class="term-val"><span id="res-time">--</span> min</span></p>
+                    <p class="log-line"><span class="prompt">></span> <span
+                            data-i18n="logRadius">MAX_RADIUS_SPREAD:</span> <span class="term-val" id="res-radius">--
+                            km</span></p>
+                    <p class="log-line"><span class="prompt">></span> <span data-i18n="logArea">COVERED_AREA:</span>
+                        <span class="term-val" id="res-area">-- km²</span></p>
+                    <p class="log-line"><span class="prompt">></span> <span
+                            data-i18n="logTraffic">TRAFFIC_HEURISTIC_PENALTY:</span> <span class="term-val"
+                            id="res-traffic">0%</span></p>
                 </div>
 
                 <div class="sheet-actions">
                     <button class="md-button filled tonal" id="btn-streetview">
                         <span class="material-symbols-outlined">streetview</span>
-                        Street View
+                        <span data-i18n="streetView">Street View</span>
                     </button>
-                    <button class="md-button outlined" id="btn-export">Export</button>
-                    <button class="md-button text" id="btn-clear">Reset</button>
+                    <button class="md-button outlined" id="btn-export" data-i18n="export">Export</button>
+                    <button class="md-button text" id="btn-clear" data-i18n="reset">Reset</button>
                 </div>
             </div>
 
             <!-- Loading Indicator -->
             <div id="map-loading" class="md-loading-overlay hidden">
                 <div class="md-circular-progress"></div>
-                <span class="loading-text">Analyzing Graph Data...</span>
+                <span class="loading-text" data-i18n="analyzing">Analyzing Graph Data...</span>
             </div>
         </main>
     </div>
-
-    <!-- Settings Dialog -->
-    <dialog id="settings-dialog" class="md-dialog">
-        <h2 class="dialog-title">API Configuration</h2>
-        <p class="dialog-desc">Enter your API keys to enable real-world routing, live traffic, and OSM POI fetching.</p>
-
-        <form method="dialog" id="settings-form">
-            <div class="md-text-field mt-16">
-                <label for="api-ors">OpenRouteService API Key</label>
-                <input type="text" id="api-ors" placeholder="For accurate isochrones...">
-            </div>
-
-            <div class="md-text-field mt-16">
-                <label for="api-tomtom">TomTom API Key</label>
-                <input type="text" id="api-tomtom" placeholder="For live traffic & routing...">
-            </div>
-
-            <div class="dialog-actions mt-24">
-                <button type="button" class="md-button text" id="btn-close-settings">Cancel</button>
-                <button type="button" class="md-button filled" id="btn-save-settings">Save Keys</button>
-            </div>
-        </form>
-    </dialog>
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

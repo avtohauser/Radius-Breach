@@ -4,268 +4,300 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radius Breach | OSINT Geometry Tool</title>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <!-- Google Fonts for Typography -->
+    <title>Radius Breach | OSINT Tool</title>
+
+    <!-- Material Symbols -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+
+    <!-- Google Fonts for Material You (Outfit/Roboto Expressive) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@500;700;900&family=Rubik:wght@300;400;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap"
         rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
     <!-- Main Style -->
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
-    <div id="app">
-        <aside class="sidebar">
-            <header class="sidebar-header">
-                <h1 class="logo">RADIUS <span class="accent-text">BREACH</span></h1>
-                <p class="subtitle">Reverse Spatial Analysis OSINT Tool</p>
-                <div class="system-status">
-                    <div class="status-indicator online"></div>
-                    <span class="status-text animate-pulse">SYSTEM SECURE</span>
-                </div>
-            </header>
+<body class="theme-dark">
 
-            <form id="analysis-form" class="controls-panel">
+    <!-- Top App Bar -->
+    <header class="top-app-bar">
+        <div class="app-bar-left">
+            <span class="material-symbols-outlined logo-icon">radar</span>
+            <div class="app-title-group">
+                <h1 class="app-title">Radius Breach</h1>
+                <span class="app-subtitle">OSINT Geometry Tool</span>
+            </div>
+        </div>
+        <div class="app-bar-right">
+            <button class="icon-button" id="btn-settings" title="API Settings">
+                <span class="material-symbols-outlined">settings</span>
+            </button>
+        </div>
+    </header>
 
-                <div class="control-group">
-                    <label for="coordinates" class="control-label">FINISH POINT (LAT, LNG) <span
-                            class="required">*</span></label>
-                    <div class="input-wrapper">
-                        <input type="text" id="coordinates" placeholder="e.g. 55.7558, 37.6173" required>
-                        <button type="button" class="btn-icon" id="btn-pick-location" title="Pick from map">
-                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
-                                fill="none">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                <circle cx="12" cy="10" r="3"></circle>
-                            </svg>
-                        </button>
+    <div id="app-container">
+        <!-- Floating Navigation / Sidebar Config -->
+        <aside class="side-panel">
+            <form id="analysis-form" class="scrollable-content">
+
+                <!-- Card: Location & Time -->
+                <div class="md-card">
+                    <h2 class="card-title">Setup</h2>
+
+                    <div class="md-text-field">
+                        <label for="coordinates">Finish Point (Lat, Lng)</label>
+                        <div class="input-with-icon">
+                            <span class="material-symbols-outlined field-icon">my_location</span>
+                            <input type="text" id="coordinates" placeholder="e.g. 55.7558, 37.6173" required>
+                            <button type="button" class="icon-button small" id="btn-pick-location"
+                                title="Pick from map">
+                                <span class="material-symbols-outlined">location_on</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="md-text-field">
+                        <label for="travel-time">Travel Time (Minutes)</label>
+                        <div class="input-with-icon">
+                            <span class="material-symbols-outlined field-icon">schedule</span>
+                            <input type="number" id="travel-time" min="1" max="1440" value="30" required>
+                        </div>
                     </div>
                 </div>
 
-                <div class="control-group">
-                    <label for="travel-time" class="control-label">TRAVEL TIME (MIN) <span
-                            class="required">*</span></label>
-                    <input type="number" id="travel-time" min="1" max="1440" value="30" required>
-                </div>
-
-                <div class="control-group">
-                    <label class="control-label">TRANSPORT PROFILE</label>
-                    <div class="profile-grid">
-                        <label class="profile-card">
+                <!-- Card: Transport Profiles -->
+                <div class="md-card">
+                    <h2 class="card-title">Transport Profile</h2>
+                    <div class="chip-group">
+                        <label class="md-chip">
                             <input type="radio" name="transport" value="driving-car" checked>
-                            <span class="card-content">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
-                                    fill="none">
-                                    <path
-                                        d="M5 11h14M3 15h18M5 15v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3M15 15v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3">
-                                    </path>
-                                    <path d="M16 11l-1.5-4a1 1 0 0 0-1-.5h-3a1 1 0 0 0-1 .5L8 11"></path>
-                                    <path
-                                        d="M5 11a2.5 2.5 0 0 1-2.5 2.5v1A2.5 2.5 0 0 0 5 17h14a2.5 2.5 0 0 0 2.5-2.5v-1A2.5 2.5 0 0 1 19 11H5z">
-                                    </path>
-                                </svg>
+                            <span class="chip-content">
+                                <span class="material-symbols-outlined">directions_car</span>
                                 Auto
                             </span>
                         </label>
-                        <label class="profile-card">
+                        <label class="md-chip">
                             <input type="radio" name="transport" value="off-road">
-                            <span class="card-content">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
-                                    fill="none">
-                                    <path
-                                        d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z">
-                                    </path>
-                                </svg>
+                            <span class="chip-content">
+                                <span class="material-symbols-outlined">rv_hookup</span>
                                 Buggy
                             </span>
                         </label>
-                        <label class="profile-card">
+                        <label class="md-chip">
                             <input type="radio" name="transport" value="foot-walking">
-                            <span class="card-content">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
-                                    fill="none">
-                                    <path d="M13 4v16M17 4v16M9 4v16M5 4v16M1 8h22M1 16h22"></path>
-                                </svg>
+                            <span class="chip-content">
+                                <span class="material-symbols-outlined">directions_walk</span>
                                 Walk
                             </span>
                         </label>
-                        <label class="profile-card">
+                        <label class="md-chip">
                             <input type="radio" name="transport" value="cycling-regular">
-                            <span class="card-content">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
-                                    fill="none">
-                                    <circle cx="5" cy="18" r="4"></circle>
-                                    <circle cx="19" cy="18" r="4"></circle>
-                                    <path d="M12 18v-5l-4-4"></path>
-                                    <path d="M12 13h5l3-3"></path>
-                                    <path d="M15 6h-3.5a1.5 1.5 0 0 0-1.5 1.5v3"></path>
-                                </svg>
+                            <span class="chip-content">
+                                <span class="material-symbols-outlined">directions_bike</span>
                                 Bike
                             </span>
                         </label>
-                        <label class="profile-card">
+                        <label class="md-chip">
                             <input type="radio" name="transport" value="transit">
-                            <span class="card-content">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
-                                    fill="none">
-                                    <rect x="4" y="3" width="16" height="18" rx="2" ry="2"></rect>
-                                    <line x1="12" y1="3" x2="12" y2="7"></line>
-                                    <line x1="8" y1="13" x2="16" y2="13"></line>
-                                    <line x1="8" y1="17" x2="16" y2="17"></line>
-                                </svg>
+                            <span class="chip-content">
+                                <span class="material-symbols-outlined">directions_bus</span>
                                 Bus
                             </span>
                         </label>
-                        <label class="profile-card">
+                        <label class="md-chip">
                             <input type="radio" name="transport" value="train">
-                            <span class="card-content">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
-                                    fill="none">
-                                    <path d="M4 14V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z">
-                                    </path>
-                                    <path d="M8 16v4"></path>
-                                    <path d="M16 16v4"></path>
-                                    <path d="M12 20v2"></path>
-                                    <circle cx="12" cy="10" r="1.5"></circle>
-                                </svg>
+                            <span class="chip-content">
+                                <span class="material-symbols-outlined">train</span>
                                 Train
                             </span>
                         </label>
                     </div>
                 </div>
 
-                <div class="control-group">
-                    <label class="control-label">ENVIRONMENT & LOGISTICS</label>
-                    <div class="toggle-group">
-                        <label class="toggle">
+                <!-- Card: Environment & Logistics -->
+                <div class="md-card">
+                    <h2 class="card-title">Logistics & Factors</h2>
+
+                    <label class="md-switch-row">
+                        <div class="switch-info">
+                            <span class="switch-title">Weather Impact</span>
+                            <span class="switch-desc">Reduces speed by 20%</span>
+                        </div>
+                        <div class="md-switch">
                             <input type="checkbox" id="weather-toggle">
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Weather Impact (-20% Speed)</span>
-                        </label>
-                        <label class="toggle">
+                            <div class="switch-track"></div>
+                        </div>
+                    </label>
+
+                    <label class="md-switch-row">
+                        <div class="switch-info">
+                            <span class="switch-title">Pit-stop Auto Calc</span>
+                            <span class="switch-desc">+15 min every 3 hours</span>
+                        </div>
+                        <div class="md-switch">
                             <input type="checkbox" id="pitstop-toggle">
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Pit-stop Auto Calc (+15m/3h)</span>
-                        </label>
-                        <label class="toggle">
+                            <div class="switch-track"></div>
+                        </div>
+                    </label>
+
+                    <label class="md-switch-row">
+                        <div class="switch-info">
+                            <span class="switch-title">Border Crossing Delay</span>
+                            <span class="switch-desc">Adds 1 hour fixed delay</span>
+                        </div>
+                        <div class="md-switch">
                             <input type="checkbox" id="border-toggle">
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Border Crossing Delay (+1h)</span>
-                        </label>
-                        <label class="toggle">
+                            <div class="switch-track"></div>
+                        </div>
+                    </label>
+
+                    <label class="md-switch-row">
+                        <div class="switch-info">
+                            <span class="switch-title">Real API Routing</span>
+                            <span class="switch-desc">Uses OpenRouteService (requires API Key)</span>
+                        </div>
+                        <div class="md-switch">
+                            <input type="checkbox" id="real-api-toggle">
+                            <div class="switch-track"></div>
+                        </div>
+                    </label>
+
+                    <label class="md-switch-row">
+                        <div class="switch-info">
+                            <span class="switch-title">Real Traffic API</span>
+                            <span class="switch-desc">TomTom Live Traffic (requires API Key)</span>
+                        </div>
+                        <div class="md-switch">
                             <input type="checkbox" id="traffic-api-toggle">
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Traffic API (Simulated)</span>
-                        </label>
-                        <input type="datetime-local" id="historical-time" class="hidden"
-                            style="margin-left: 36px; margin-top: 5px;" title="Historical Traffic Time">
-                    </div>
+                            <div class="switch-track"></div>
+                        </div>
+                    </label>
+                    <input type="datetime-local" id="historical-time" class="md-input-datetime hidden">
                 </div>
 
-                <div class="control-group">
-                    <label for="error-margin" class="control-label">GENERAL ERROR MARGIN</label>
-                    <div class="slider-wrapper">
-                        <input type="range" id="error-margin" min="0" max="30" value="10">
-                        <span class="slider-val"><span id="margin-val">10</span>%</span>
+                <!-- Analysis Mode -->
+                <div class="md-card">
+                    <h2 class="card-title">Heatmap & Variance</h2>
+                    <div class="md-slider-container">
+                        <div class="slider-header">
+                            <span>General Error Margin</span>
+                            <span class="slider-val" id="margin-val">10%</span>
+                        </div>
+                        <input type="range" class="md-slider" id="error-margin" min="0" max="30" value="10">
                     </div>
-                    <small class="helper-text">Increases blob variance.</small>
-                </div>
 
-                <div class="control-group">
-                    <label class="control-label">ANALYSIS MODE</label>
-                    <div class="toggle-group">
-                        <label class="toggle">
+                    <label class="md-switch-row mt-16">
+                        <div class="switch-info">
+                            <span class="switch-title">Probability Heatmap</span>
+                            <span class="switch-desc">Node weighting via Overpass API</span>
+                        </div>
+                        <div class="md-switch">
                             <input type="checkbox" id="heatmap-toggle" checked>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Propability Heatmap</span>
-                        </label>
-                        <label class="toggle">
-                            <input type="checkbox" id="cold-logic-toggle" checked>
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-label">Cold Logic Rules</span>
-                        </label>
-                    </div>
+                            <div class="switch-track"></div>
+                        </div>
+                    </label>
                 </div>
 
-                <button type="submit" class="btn-primary" id="btn-breach">
-                    <span class="btn-text">INITIATE BREACH</span>
-                    <span class="btn-bg"></span>
-                </button>
+                <!-- Spacing for FAB -->
+                <div style="height: 80px;"></div>
             </form>
 
-            <div id="results-panel" class="results-panel hidden">
-                <h3 class="results-title">ANALYSIS COMPLETE</h3>
-                <div class="result-stat" id="stat-adjusted-time">
-                    <span class="stat-label">EFF. TRAVEL TIME</span>
-                    <span class="stat-value"><span id="res-time">--</span> min</span>
-                </div>
-                <div class="result-stat">
-                    <span class="stat-label">MAX RADIUS</span>
-                    <span class="stat-value" id="res-radius">-- km</span>
-                </div>
-                <div class="result-stat">
-                    <span class="stat-label">AREA COVERAGE</span>
-                    <span class="stat-value" id="res-area">-- km²</span>
-                </div>
-                <div class="result-stat">
-                    <span class="stat-label">CONFIDENCE</span>
-                    <span class="stat-value accent-text">HIGH</span>
-                </div>
-
-                <div class="investigation-module mt-3">
-                    <h3 class="results-title text-warn">INVESTIGATION TOOLS</h3>
-                    <button class="btn-secondary" id="btn-streetview">
-                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"
-                            fill="none" style="margin-right:5px; vertical-align:middle;">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                        </svg>
-                        STREET VIEW CHECK
-                    </button>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="btn-secondary" id="btn-export">EXPORT JSON</button>
-                    <button class="btn-secondary" id="btn-clear">RESET</button>
-                </div>
+            <div class="fab-container">
+                <button type="submit" form="analysis-form" class="md-fab primary" id="btn-breach">
+                    <span class="material-symbols-outlined">radar</span>
+                    Initiate Breach
+                </button>
             </div>
-
-            <footer class="sidebar-footer">
-                <p>Radius Breach OSINT v1.0 | Engine: ColdLogic™</p>
-                <div class="scanlines"></div>
-            </footer>
         </aside>
 
+        <!-- Main Map Area -->
         <main class="map-container">
             <div id="map"></div>
-            <div class="map-overlay">
-                <div class="overlay-corner top-left"></div>
-                <div class="overlay-corner top-right"></div>
-                <div class="overlay-corner bottom-left"></div>
-                <div class="overlay-corner bottom-right"></div>
+
+            <!-- Result Overlay Card -->
+            <div id="results-panel" class="md-bottom-sheet hidden">
+                <div class="drag-handle"></div>
+                <h3 class="sheet-title">Analysis Complete</h3>
+
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="material-symbols-outlined stat-icon">timer</span>
+                        <div class="stat-content">
+                            <span class="stat-val"><span id="res-time">--</span> min</span>
+                            <span class="stat-lbl">Eff. Time</span>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <span class="material-symbols-outlined stat-icon">moving</span>
+                        <div class="stat-content">
+                            <span class="stat-val" id="res-radius">-- km</span>
+                            <span class="stat-lbl">Max Radius</span>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <span class="material-symbols-outlined stat-icon">architecture</span>
+                        <div class="stat-content">
+                            <span class="stat-val" id="res-area">-- km²</span>
+                            <span class="stat-lbl">Area</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sheet-actions">
+                    <button class="md-button filled tonal" id="btn-streetview">
+                        <span class="material-symbols-outlined">streetview</span>
+                        Street View
+                    </button>
+                    <button class="md-button outlined" id="btn-export">Export</button>
+                    <button class="md-button text" id="btn-clear">Reset</button>
+                </div>
             </div>
-            <!-- Loading indicator overlay -->
-            <div id="map-loading" class="map-loading hidden">
-                <div class="spinner"></div>
-                <span>ANALYZING GRAPH DATA...</span>
+
+            <!-- Loading Indicator -->
+            <div id="map-loading" class="md-loading-overlay hidden">
+                <div class="md-circular-progress"></div>
+                <span class="loading-text">Analyzing Graph Data...</span>
             </div>
         </main>
     </div>
 
+    <!-- Settings Dialog -->
+    <dialog id="settings-dialog" class="md-dialog">
+        <h2 class="dialog-title">API Configuration</h2>
+        <p class="dialog-desc">Enter your API keys to enable real-world routing, live traffic, and OSM POI fetching.</p>
+
+        <form method="dialog" id="settings-form">
+            <div class="md-text-field mt-16">
+                <label for="api-ors">OpenRouteService API Key</label>
+                <input type="text" id="api-ors" placeholder="For accurate isochrones...">
+            </div>
+
+            <div class="md-text-field mt-16">
+                <label for="api-tomtom">TomTom API Key</label>
+                <input type="text" id="api-tomtom" placeholder="For live traffic & routing...">
+            </div>
+
+            <div class="dialog-actions mt-24">
+                <button type="button" class="md-button text" id="btn-close-settings">Cancel</button>
+                <button type="button" class="md-button filled" id="btn-save-settings">Save Keys</button>
+            </div>
+        </form>
+    </dialog>
+
     <!-- Scripts -->
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <!-- Turf.js for advanced geospatial calculations -->
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-    <!-- Leaflet Heatmap Plugin -->
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    <!-- Main Logistics Engine & UI -->
     <script src="app.js"></script>
 </body>
 

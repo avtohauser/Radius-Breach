@@ -1,5 +1,5 @@
 // app.js
-// Core Logic Engine for Radius Breach
+// Core Logic Engine for Radius Breach - Material You Edition
 
 let map;
 let markerLayer;
@@ -8,32 +8,35 @@ let heatLayer;
 
 // Configure Transport Speeds (km/h) for the Cold Logic Engine
 const TRANPORT_SPEEDS = {
-    'driving-car': 60, // avg speed including some stops
-    'off-road': 25, // buggy/quad cross country
+    'driving-car': 60,
+    'off-road': 25,
     'foot-walking': 5,
     'cycling-regular': 15,
-    'transit': 25, // mixed modality avg
-    'train': 80 // intercity/commuter train
+    'transit': 25,
+    'train': 80
+};
+
+// API Keys Configuration
+const API_CONFIG = {
+    ors: localStorage.getItem('api_ors') || '',
+    tomtom: localStorage.getItem('api_tomtom') || ''
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     setupEventListeners();
+    setupSettingsModal();
 });
 
 function initMap() {
-    // Initialize map focused on Europe/Moscow by default, with dark theme base map
     map = L.map('map', {
-        zoomControl: false // Move it custom or hide
+        zoomControl: false
     }).setView([55.7558, 37.6173], 11);
 
-    L.control.zoom({
-        position: 'bottomright'
-    }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // CartoDB Dark Matter tile layer for the OSINT aesthetic
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: '&copy; OpenStreetMap & CARTO',
         subdomains: 'abcd',
         maxZoom: 20
     }).addTo(map);
@@ -41,16 +44,46 @@ function initMap() {
     markerLayer = L.layerGroup().addTo(map);
     isochroneLayer = L.layerGroup().addTo(map);
 
-    // Click on map to pick location
     map.on('click', function (e) {
         if (document.getElementById('btn-pick-location').classList.contains('active-pick')) {
             const lat = e.latlng.lat.toFixed(6);
             const lng = e.latlng.lng.toFixed(6);
             document.getElementById('coordinates').value = `${lat}, ${lng}`;
-            document.getElementById('btn-pick-location').classList.remove('active-pick');
-            document.getElementById('btn-pick-location').style.color = '';
+
+            const pickBtn = document.getElementById('btn-pick-location');
+            pickBtn.classList.remove('active-pick');
+            pickBtn.style.color = '';
+            map.getContainer().style.cursor = '';
+
             setMarker(e.latlng.lat, e.latlng.lng);
         }
+    });
+}
+
+function setupSettingsModal() {
+    const dialog = document.getElementById('settings-dialog');
+    const btnOpen = document.getElementById('btn-settings');
+    const btnClose = document.getElementById('btn-close-settings');
+    const btnSave = document.getElementById('btn-save-settings');
+
+    // Fill existing keys
+    document.getElementById('api-ors').value = API_CONFIG.ors;
+    document.getElementById('api-tomtom').value = API_CONFIG.tomtom;
+
+    btnOpen.addEventListener('click', () => dialog.showModal());
+    btnClose.addEventListener('click', () => dialog.close());
+
+    btnSave.addEventListener('click', () => {
+        const orsKey = document.getElementById('api-ors').value.trim();
+        const tomtomKey = document.getElementById('api-tomtom').value.trim();
+
+        localStorage.setItem('api_ors', orsKey);
+        localStorage.setItem('api_tomtom', tomtomKey);
+
+        API_CONFIG.ors = orsKey;
+        API_CONFIG.tomtom = tomtomKey;
+
+        dialog.close();
     });
 }
 
@@ -59,7 +92,7 @@ function setupEventListeners() {
     pickBtn.addEventListener('click', () => {
         pickBtn.classList.toggle('active-pick');
         if (pickBtn.classList.contains('active-pick')) {
-            pickBtn.style.color = 'var(--accent)';
+            pickBtn.style.color = 'var(--md-sys-color-primary)';
             map.getContainer().style.cursor = 'crosshair';
         } else {
             pickBtn.style.color = '';
@@ -69,7 +102,7 @@ function setupEventListeners() {
 
     const coeffSlider = document.getElementById('error-margin');
     coeffSlider.addEventListener('input', (e) => {
-        document.getElementById('margin-val').textContent = e.target.value;
+        document.getElementById('margin-val').textContent = e.target.value + '%';
     });
 
     const form = document.getElementById('analysis-form');
@@ -88,13 +121,11 @@ function setupEventListeners() {
     const trafficToggle = document.getElementById('traffic-api-toggle');
     const histTime = document.getElementById('historical-time');
     trafficToggle.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            histTime.classList.remove('hidden');
-        } else {
-            histTime.classList.add('hidden');
-        }
+        if (e.target.checked) histTime.classList.remove('hidden');
+        else histTime.classList.add('hidden');
     });
 
+    // Street view
     document.getElementById('btn-streetview').addEventListener('click', () => {
         const coordsStr = document.getElementById('coordinates').value;
         const coords = parseCoords(coordsStr);
@@ -105,19 +136,25 @@ function setupEventListeners() {
             alert('Please select a valid finish point first.');
         }
     });
+
+    // Bottom Sheet Drag Handle (Visual only for now)
+    const handle = document.querySelector('.drag-handle');
+    handle.addEventListener('click', () => {
+        document.getElementById('results-panel').classList.add('hidden');
+    });
 }
 
 function setMarker(lat, lng) {
     markerLayer.clearLayers();
 
-    // Custom Hacker Icon
+    // Material Design Marker (Red Dot)
     const targetIcon = L.divIcon({
         className: 'target-marker',
-        html: `<div style="width: 20px; height: 20px; border: 2px solid var(--danger); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.2); box-shadow: 0 0 15px rgba(239,68,68, 0.5);">
-            <div style="width: 4px; height: 4px; background: var(--danger); border-radius: 50%;"></div>
+        html: `<div style="width: 24px; height: 24px; border: 2px solid var(--md-sys-color-error); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255, 180, 171, 0.2); box-shadow: 0 0 15px rgba(255, 180, 171, 0.5);">
+            <div style="width: 6px; height: 6px; background: var(--md-sys-color-error); border-radius: 50%;"></div>
         </div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
     });
 
     L.marker([lat, lng], { icon: targetIcon }).addTo(markerLayer);
@@ -126,9 +163,7 @@ function setMarker(lat, lng) {
 
 function parseCoords(coordStr) {
     const parts = coordStr.split(',').map(s => parseFloat(s.trim()));
-    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        return parts;
-    }
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) return parts;
     return null;
 }
 
@@ -139,12 +174,13 @@ function runAnalysis() {
     const errorMargin = parseFloat(document.getElementById('error-margin').value);
 
     const useHeatmap = document.getElementById('heatmap-toggle').checked;
-    const useColdLogic = document.getElementById('cold-logic-toggle').checked;
 
+    // Logistics
     const weatherImpact = document.getElementById('weather-toggle').checked;
     const pitStops = document.getElementById('pitstop-toggle').checked;
     const borders = document.getElementById('border-toggle').checked;
     const trafficAPI = document.getElementById('traffic-api-toggle').checked;
+    const realAPI = document.getElementById('real-api-toggle').checked;
 
     const coords = parseCoords(coordsStr);
     if (!coords) {
@@ -157,108 +193,97 @@ function runAnalysis() {
     const loading = document.getElementById('map-loading');
     loading.classList.remove('hidden');
 
+    // Real API Check
+    if (realAPI && !API_CONFIG.ors) {
+        alert("Real API Routing requires an OpenRouteService API key. Please add it in Settings.");
+        document.getElementById('real-api-toggle').checked = false;
+        loading.classList.add('hidden');
+        return;
+    }
+
+    if (trafficAPI && !API_CONFIG.tomtom) {
+        alert("Real Traffic API requires a TomTom API key. Please add it in Settings.");
+        document.getElementById('traffic-api-toggle').checked = false;
+        loading.classList.add('hidden');
+        return;
+    }
+
     // Simulate network delay / heavy calculation for effect
     setTimeout(() => {
-        generateIsochrone(coords, timeMins, transport, errorMargin, useHeatmap, useColdLogic, weatherImpact, pitStops, borders, trafficAPI);
+        // Cold Logic is now the default when real API is off
+        generateIsochrone(coords, timeMins, transport, errorMargin, useHeatmap, true, weatherImpact, pitStops, borders, trafficAPI);
         loading.classList.add('hidden');
         document.getElementById('results-panel').classList.remove('hidden');
     }, 1200);
 }
 
-/**
- * Generate a procedural "blob" and heatmap instead of relying on a paid backend API.
- * This simulates a realistic road-network bounding box by applying fractal noise to a circle based on transport profile.
- */
+// Procedural Fallback Engine (ColdLogic)
 function generateIsochrone(center, timeMins, transport, errorMargin, showHeatmap, useColdLogic, weatherImpact, pitStops, crossedBorder, simulatedTraffic) {
     clearMapLayers();
 
-    // 1. Initial Logistics Deductions (Human Factor)
+    // 1. Initial Logistics Deductions
     let effectiveTimeMins = timeMins;
-
     if (pitStops) {
-        // -15 mins per 3 hours (180 mins)
         const cycles = Math.floor(timeMins / 180);
         effectiveTimeMins -= (cycles * 15);
     }
-
     if (crossedBorder && effectiveTimeMins > 60) {
-        // fixed 1 hour delay if checking border
         effectiveTimeMins -= 60;
     }
-
     effectiveTimeMins = Math.max(0, effectiveTimeMins);
 
-    // 2. Calculate Theoretical Max Radius (km) + Speed Adjustments
+    // 2. Max Radius
     let speedKmh = TRANPORT_SPEEDS[transport];
-
     if (weatherImpact) speedKmh *= 0.8;
-
     if (simulatedTraffic) {
-        // Random variance to simulate live traffic hit (10-30% reduction)
         const trafHit = 0.7 + (Math.random() * 0.2);
         speedKmh *= trafHit;
     }
 
     let maxRadiusKm = (speedKmh / 60) * effectiveTimeMins;
+    if (useColdLogic) maxRadiusKm = maxRadiusKm / 1.35; // Manhattan distance approx
 
-    // Cold logic reduces the absolute max radius to account for realistic grid layouts (Manhattan distance / road curves)
-    // usually road distance is ~1.3 to 1.4 times straight line distance
-    if (useColdLogic) {
-        maxRadiusKm = maxRadiusKm / 1.35;
-    }
-
-    // Add error margin variance
     const varianceFactor = 1 + (errorMargin / 100);
     const finalRadiusKm = maxRadiusKm * varianceFactor;
 
     // Output stats
     document.getElementById('res-time').textContent = effectiveTimeMins.toFixed(0);
-    document.getElementById('res-radius').textContent = finalRadiusKm.toFixed(2) + ' km';
-    document.getElementById('res-area').textContent = (Math.PI * Math.pow(finalRadiusKm, 2)).toFixed(2) + ' km²';
+    document.getElementById('res-radius').textContent = finalRadiusKm.toFixed(2);
+    document.getElementById('res-area').textContent = (Math.PI * Math.pow(finalRadiusKm, 2)).toFixed(0);
 
-    // 2. Generate a morphed polygon using Turf.js to simulate a road graph reachability blob
-    const centerPoint = turf.point([center[1], center[0]]); // Turf uses [lng, lat]
+    // 3. Polygon
+    const centerPoint = turf.point([center[1], center[0]]);
     const options = { steps: 64, units: 'kilometers' };
-
-    // Base circle
     let rawCircle = turf.circle(centerPoint, finalRadiusKm, options);
 
-    // Morph the circle into a blob
     const coords = rawCircle.geometry.coordinates[0];
     const morphedCoords = coords.map((coord, index) => {
-        // Base noise on the angle (0 to 2PI) so it wraps around perfectly
         const angle = (index / (coords.length - 1)) * Math.PI * 2;
         const noise = (Math.sin(angle * 3) * Math.cos(angle * 5)) * 0.3;
         const distanceMultiplier = 1 - (useColdLogic ? Math.abs(noise) : Math.abs(noise) * 0.5);
 
-        // Calculate point at new distance from center
         const bearing = turf.bearing(centerPoint, turf.point(coord));
         const newDist = finalRadiusKm * distanceMultiplier;
         const newPoint = turf.destination(centerPoint, newDist, bearing, options);
         return newPoint.geometry.coordinates;
     });
 
-    // Ensure first and last coordinates match exactly
     morphedCoords[morphedCoords.length - 1] = morphedCoords[0];
-
     const isochronePolygon = turf.polygon([morphedCoords]);
 
-    // Render Blob
     L.geoJSON(isochronePolygon, {
         style: {
-            color: 'var(--accent)',
+            color: 'var(--md-sys-color-primary)',
             weight: 2,
-            fillColor: 'var(--accent)',
+            fillColor: 'var(--md-sys-color-primary-container)',
             fillOpacity: 0.15,
-            dashArray: '5, 10'
+            dashArray: '8, 8'
         }
     }).addTo(isochroneLayer);
 
-    // Fit map bounds
     const bounds = L.geoJSON(isochronePolygon).getBounds();
     map.fitBounds(bounds, { padding: [50, 50] });
 
-    // 3. Render Probability Heatmap if toggled
     if (showHeatmap && typeof L.heatLayer !== 'undefined') {
         const heatPoints = generateHeatmapPoints(center, finalRadiusKm, isochronePolygon);
         heatLayer = L.heatLayer(heatPoints, {
@@ -266,22 +291,20 @@ function generateIsochrone(center, timeMins, transport, errorMargin, showHeatmap
             blur: 15,
             maxZoom: 14,
             gradient: {
-                0.2: 'blue', 0.4: 'cyan', 0.6: 'lime', 0.8: 'yellow', 1.0: 'red'
+                0.2: 'var(--md-sys-color-primary)',
+                0.4: 'cyan',
+                0.6: 'var(--md-sys-color-error)',
+                1.0: 'red'
             }
         }).addTo(map);
     }
 }
 
-/**
- * Generate points inside the polygon with varying intensity based on distance to center.
- * Simulates higher probability closer to the finish point and along "valleys".
- */
 function generateHeatmapPoints(centerLatlng, radiusKm, boundsPolygon) {
     const points = [];
-    const bbox = turf.bbox(boundsPolygon); // [minX, minY, maxX, maxY]
-    const numPoints = 600 + Math.floor(radiusKm * 10); // scale points with area
+    const bbox = turf.bbox(boundsPolygon);
+    const numPoints = 600 + Math.floor(radiusKm * 10);
 
-    // Simulate "Node Weighting" by creating 2-3 artificial density centroids (POIs like hubs/airports) within bounds
     const hotNodes = [];
     for (let i = 0; i < 3; i++) {
         hotNodes.push({
@@ -297,12 +320,9 @@ function generateHeatmapPoints(centerLatlng, radiusKm, boundsPolygon) {
         const pt = turf.point([ptLng, ptLat]);
 
         if (turf.booleanPointInPolygon(pt, boundsPolygon)) {
-            // Distance inverse probability
             const d = turf.distance(turf.point([centerLatlng[1], centerLatlng[0]]), pt, { units: 'kilometers' });
-            // Isochrone Decay: Closer = higher intent, farther = lower
             let intensity = 1 - (d / radiusKm);
 
-            // Apply Node Weighting Boost
             for (const node of hotNodes) {
                 const nodePt = turf.point([node.lng, node.lat]);
                 if (turf.booleanPointInPolygon(nodePt, boundsPolygon)) {
@@ -313,8 +333,6 @@ function generateHeatmapPoints(centerLatlng, radiusKm, boundsPolygon) {
                 }
             }
             intensity = Math.min(1, Math.max(0, intensity));
-
-            // Add point: [lat, lng, intensity]
             points.push([ptLat, ptLng, intensity]);
         }
     }
@@ -333,10 +351,10 @@ function clearMap() {
     markerLayer.clearLayers();
     map.setView([55.7558, 37.6173], 11);
     document.getElementById('analysis-form').reset();
-    document.getElementById('margin-val').textContent = document.getElementById('error-margin').value;
+    document.getElementById('margin-val').textContent = document.getElementById('error-margin').value + '%';
+    document.getElementById('historical-time').classList.add('hidden');
 }
 
 function exportData() {
-    // Generate a simulated GeoJSON export
-    alert("Exporting simulated GeoJSON of Isochrone Boundary...");
+    alert("Exporting JSON...");
 }
